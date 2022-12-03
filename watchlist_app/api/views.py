@@ -7,8 +7,8 @@ from rest_framework.views import APIView
 
 class StreamPlatformListAV(APIView):
     def get(self, request):
-        movies = StreamPlatform.objects.all()
-        serializer = StreamPlatformSerializer(movies, many=True)
+        platform = StreamPlatform.objects.all()
+        serializer = StreamPlatformSerializer(platform, many=True)
         return Response(serializer.data)
     
     def post(self, request):
