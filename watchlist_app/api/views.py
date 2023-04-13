@@ -10,6 +10,7 @@ from rest_framework import generics
 from rest_framework import viewsets
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from .permissions import AdminOrReadOnly, ReviewUserOrReadOnly
 
 
 class StreamPlatformVS(viewsets.ViewSet):
@@ -153,6 +154,15 @@ class ReviewCreateAV(generics.CreateAPIView):
         review_query = Reviews.objects.filter(watchlist=movie, review_user=review_user)
         if review_query.exists():
             raise ValidationError("You already reviewed this movie!")
+
+        if movie.number_of_ratings == 0:
+            movie.avg_rating = serializer.validated_data['rating']
+        else:
+            current_rating = serializer.validated_data['rating']
+            movie.avg_rating = (movie.avg_rating + current_rating)/2
+
+        movie.number_of_ratings = movie.number_of_ratings + 1
+        movie.save()
         serializer.save(watchlist=movie, review_user=review_user)
 
 
@@ -169,4 +179,4 @@ class ReviewsListAV(generics.ListAPIView):
 class ReviewDetailAV(generics.RetrieveUpdateDestroyAPIView):
     queryset = Reviews.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [ReviewUserOrReadOnly]
