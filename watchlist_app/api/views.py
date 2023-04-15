@@ -9,38 +9,40 @@ from rest_framework import mixins
 from rest_framework import generics
 from rest_framework import viewsets
 from django.shortcuts import get_object_or_404
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from .permissions import AdminOrReadOnly, ReviewUserOrReadOnly
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
+from .permissions import IsAdminOrReadOnly, IsReviewUserOrReadOnly
 
 
-class StreamPlatformVS(viewsets.ViewSet):
-    def list(self, request):
-        queryset = StreamPlatform.objects.all()
-        serializer = StreamPlatformSerializer(queryset, many=True)
-        return Response(serializer.data)
-
-    def retrieve(self, request, pk=None):
-        queryset = StreamPlatform.objects.all()
-        platform = get_object_or_404(queryset, pk=pk)
-        serializer = StreamPlatformSerializer(platform)
-        return Response(serializer.data)
-
-    def create(self, request):
-        serializer = StreamPlatformSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def destroy(self, request, pk=None):
-        print(pk)
-        queryset = StreamPlatform.objects.get(pk=pk)
-        queryset.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+# class StreamPlatformVS(viewsets.ViewSet):
+#     def list(self, request):
+#         queryset = StreamPlatform.objects.all()
+#         serializer = StreamPlatformSerializer(queryset, many=True)
+#         return Response(serializer.data)
+#
+#     def retrieve(self, request, pk=None):
+#         queryset = StreamPlatform.objects.all()
+#         platform = get_object_or_404(queryset, pk=pk)
+#         serializer = StreamPlatformSerializer(platform)
+#         return Response(serializer.data)
+#
+#     def create(self, request):
+#         serializer = StreamPlatformSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data)
+#         else:
+#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#
+#     def destroy(self, request, pk=None):
+#         print(pk)
+#         queryset = StreamPlatform.objects.get(pk=pk)
+#         queryset.delete()
+#         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class StreamPlatformListAV(APIView):
+    permission_classes = [IsAdminOrReadOnly]
+
     def get(self, request):
         platform = StreamPlatform.objects.all()
         serializer = StreamPlatformSerializer(platform, many=True)
@@ -56,6 +58,8 @@ class StreamPlatformListAV(APIView):
 
 
 class StreamPlatformDetailAV(APIView):
+    permission_classes = [IsAdminOrReadOnly]
+
     def get(self, request, id):
         try:
             platform = StreamPlatform.objects.get(pk=id)
@@ -81,6 +85,8 @@ class StreamPlatformDetailAV(APIView):
 
 # WatchList starts here
 class WatchListAV(APIView):
+    permission_classes = [IsAdminOrReadOnly]
+
     def get(self, request):
         movies = WatchList.objects.all()
         serializer = WatchListSerializer(movies, many=True)
@@ -96,6 +102,8 @@ class WatchListAV(APIView):
 
 
 class WatchDetailAV(APIView):
+    
+    permission_classes = [IsAdminOrReadOnly]
 
     def get(self, request, pk):
         try:
@@ -141,6 +149,7 @@ class WatchDetailAV(APIView):
 #         return self.destroy(request, *args, **kwargs)
 
 class ReviewCreateAV(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
     serializer_class = ReviewSerializer
 
     def get_queryset(self):
@@ -153,7 +162,7 @@ class ReviewCreateAV(generics.CreateAPIView):
         review_user = self.request.user
         review_query = Reviews.objects.filter(watchlist=movie, review_user=review_user)
         if review_query.exists():
-            raise ValidationError("You already reviewed this movie!")
+            raise ValidationError({"Detail": "You already reviewed this movie!"})
 
         if movie.number_of_ratings == 0:
             movie.avg_rating = serializer.validated_data['rating']
@@ -169,7 +178,7 @@ class ReviewCreateAV(generics.CreateAPIView):
 class ReviewsListAV(generics.ListAPIView):
     # queryset = Reviews.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         pk = self.kwargs['pk']
@@ -179,4 +188,4 @@ class ReviewsListAV(generics.ListAPIView):
 class ReviewDetailAV(generics.RetrieveUpdateDestroyAPIView):
     queryset = Reviews.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [ReviewUserOrReadOnly]
+    permission_classes = [IsReviewUserOrReadOnly]
