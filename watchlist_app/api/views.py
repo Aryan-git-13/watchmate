@@ -3,6 +3,7 @@ from rest_framework.exceptions import ValidationError
 # from rest_framework.decorators import api_view
 from watchlist_app.models import WatchList, StreamPlatform, Reviews
 from watchlist_app.api.serializers import WatchListSerializer, StreamPlatformSerializer, ReviewSerializer
+from watchlist_app.api.throttling import ReviewListThrottle, ReviewCreateThrottle
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework import mixins
@@ -11,6 +12,11 @@ from rest_framework import viewsets
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from .permissions import IsAdminOrReadOnly, IsReviewUserOrReadOnly
+from rest_framework.throttling import UserRateThrottle, AnonRateThrottle, ScopedRateThrottle
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
+from .pagination import WatchListPagination
+
 
 
 # class StreamPlatformVS(viewsets.ViewSet):
@@ -39,6 +45,19 @@ from .permissions import IsAdminOrReadOnly, IsReviewUserOrReadOnly
 #         queryset.delete()
 #         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
+class UserReview(generics.ListAPIView):
+    serializer_class = ReviewSerializer
+
+    # def get_queryset(self):
+    #     username = self.kwargs['username']
+    #     return Reviews.objects.filter(review_user__username=username)
+
+    def get_queryset(self):
+        username = self.request.query_params.get('username', None)
+        if username is not None:
+            return Reviews.objects.filter(review_user__username=username)
+        return Reviews.objects.all()
 
 class StreamPlatformListAV(APIView):
     permission_classes = [IsAdminOrReadOnly]
@@ -82,6 +101,15 @@ class StreamPlatformDetailAV(APIView):
         platform.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
+
+class WatchListLAV(generics.ListAPIView):
+    queryset = WatchList.objects.all()
+    serializer_class = WatchListSerializer
+    # permission_classes = [IsAuthenticated]
+    pagination_class = WatchListPagination
+    filter_backends = [filters.OrderingFilter]
+    ordering_fields = ['avg_rating']
 
 # WatchList starts here
 class WatchListAV(APIView):
@@ -151,6 +179,7 @@ class WatchDetailAV(APIView):
 class ReviewCreateAV(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ReviewSerializer
+    throttle_classes = [ReviewCreateThrottle]
 
     def get_queryset(self):
         Reviews.objects.all()
@@ -179,6 +208,9 @@ class ReviewsListAV(generics.ListAPIView):
     # queryset = Reviews.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticated]
+    throttle_classes = [ReviewListThrottle, AnonRateThrottle]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['review_user__username', 'active']
 
     def get_queryset(self):
         pk = self.kwargs['pk']
@@ -189,3 +221,5 @@ class ReviewDetailAV(generics.RetrieveUpdateDestroyAPIView):
     queryset = Reviews.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = [IsReviewUserOrReadOnly]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'review-detail'
