@@ -10,11 +10,11 @@ from rest_framework.routers import DefaultRouter
 
 urlpatterns = [
     path('list/', WatchListAV.as_view(), name='movie-list'),
-    path('<int:pk>/', WatchDetailAV.as_view(), name='movie-details'),
+    path('<int:pk>/', WatchDetailAV.as_view(), name='movie-detail'),
     path('list2/', WatchListLAV.as_view(), name='watch-list-2'),
     
     # path('', include(router.urls)),
-    path('stream/', StreamPlatformListAV.as_view(), name="stream"),
+    path('stream/', StreamPlatformListAV.as_view(), name="stream-platform"),
     path('stream/<int:id>/', StreamPlatformDetailAV.as_view(), name="stream"),
 
     # path('reviews/', ReviewsListAV.as_view(), name="review-list"),

@@ -6,7 +6,7 @@ from user_app import models
 from rest_framework import status
 
 
-@api_view(['POST','GET'])
+@api_view(['POST'])
 def logout_view(request):
     if request.method == 'POST':
         request.user.auth_token.delete()
@@ -26,6 +26,6 @@ def registration_view(request):
             data['email'] = account.email
             token = Token.objects.get(user=account).key
             data['token'] = token
-            return Response(data)
+            return Response(data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors)

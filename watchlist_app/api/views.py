@@ -179,7 +179,7 @@ class WatchDetailAV(APIView):
 class ReviewCreateAV(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ReviewSerializer
-    throttle_classes = [ReviewCreateThrottle]
+    # throttle_classes = [ReviewCreateThrottle]
 
     def get_queryset(self):
         Reviews.objects.all()
@@ -221,5 +221,5 @@ class ReviewDetailAV(generics.RetrieveUpdateDestroyAPIView):
     queryset = Reviews.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = [IsReviewUserOrReadOnly]
-    throttle_classes = [ScopedRateThrottle]
+    # throttle_classes = [ScopedRateThrottle]
     throttle_scope = 'review-detail'
